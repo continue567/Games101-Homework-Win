@@ -43,6 +43,16 @@ int main(){
     // matrix scalar multiply i * 2.0
     // matrix multiply i * j
     // matrix multiply vector i * v
-
+    // 
+    //
+    Eigen::Vector3f input(2.0f, 1.0f, 1.0f); //homo coordinate
+    Eigen::Matrix3f trans_mat;
+    double angle = 45.0 / 180.0 * acos(-1);
+    trans_mat << std::cos(angle), -std::sin(angle), 1.0,
+                 std::sin(angle), std::cos(angle), 2.0,
+                 0.0, 0.0, 1.0;
+    input = trans_mat * input;
+    std::cout << "Result of input \n";
+    std::cout << input << std::endl;
     return 0;
 }
