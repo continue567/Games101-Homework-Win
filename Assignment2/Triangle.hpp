@@ -9,6 +9,9 @@
 
 
 using namespace Eigen;
+
+
+
 class Triangle{
 
 public:
@@ -17,6 +20,8 @@ public:
     Vector3f color[3]; //color at each vertex;
     Vector2f tex_coords[3]; //texture u,v
     Vector3f normal[3]; //normal vector for each vertex
+
+    //Vector2f aabb_box[3];
 
     //Texture *tex;
     Triangle();
@@ -27,6 +32,8 @@ public:
     Vector3f getColor() const { return color[0]*255; } // Only one color per triangle.
     void setTexCoord(int ind, float s, float t); /*set i-th vertex texture coordinate*/
     std::array<Vector4f, 3> toVector4() const;
+
+    std::array<Vector2f, 3> getAABBBox() const;
 };
 
 

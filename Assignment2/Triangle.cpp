@@ -19,6 +19,10 @@ Triangle::Triangle() {
     tex_coords[0] << 0.0, 0.0;
     tex_coords[1] << 0.0, 0.0;
     tex_coords[2] << 0.0, 0.0;
+
+    //aabb_box[0] << 0.0, 0.0;
+    //aabb_box[1] << 0.0, 0.0;
+    //aabb_box[2] << 0.0, 0.0;
 }
 
 void Triangle::setVertex(int ind, Vector3f ver){
@@ -47,5 +51,19 @@ std::array<Vector4f, 3> Triangle::toVector4() const
 {
     std::array<Eigen::Vector4f, 3> res;
     std::transform(std::begin(v), std::end(v), res.begin(), [](auto& vec) { return Eigen::Vector4f(vec.x(), vec.y(), vec.z(), 1.f); });
+    return res;
+}
+
+std::array<Vector2f, 3> Triangle::getAABBBox() const
+{
+    std::array<Eigen::Vector2f, 3> res;
+    res[0][0] = std::min(v[0].x(), std::min(v[1].x(), v[2].x()));
+    res[0][1] = std::max(v[0].x(), std::max(v[1].x(), v[2].x()));
+
+    res[1][0] = std::min(v[0].y(), std::min(v[1].y(), v[2].y()));
+    res[1][1] = std::max(v[0].y(), std::max(v[1].y(), v[2].y()));
+
+    res[2][0] = std::min(v[0].z(), std::min(v[1].z(), v[2].z()));
+    res[2][1] = std::max(v[0].z(), std::max(v[1].z(), v[2].z()));
     return res;
 }
