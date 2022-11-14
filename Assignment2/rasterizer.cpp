@@ -138,98 +138,70 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     int max_x = aabb[0][1];
     int min_y = aabb[0][0];
     int max_y = aabb[0][1];
+
+    //超采样
+    std::array<Vector2f, 4> offsetArr;
+    offsetArr[0] = Vector2f(0.25, 0.25);
+    offsetArr[1] = Vector2f(0.25, 0.75);
+    offsetArr[2] = Vector2f(0.75, 0.25);
+    offsetArr[3] = Vector2f(0.75, 0.75);
+
     for (int x = min_x; x < max_x; ++x)
     {
         for (int y = min_y; y < max_y; ++y)
         {
-            if (insideTriangle(x, y, t.v))
-            {
-                auto [alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
-                float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-                z_interpolated *= w_reciprocal;
+            //if (insideTriangle(x, y, t.v))
+            //{
+            //    //https://blog.csdn.net/Q_pril/article/details/123598746
+            //    //-------------------
+            //    auto [alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+            //    float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+            //    float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+            //    z_interpolated *= w_reciprocal;
+            //    //深度插值与误差修复
 
-                float current_z = depth_buf[get_index(x, y)];
-                if (z_interpolated < current_z)
+            //    float current_z = depth_buf[get_index(x, y)];
+            //    if (z_interpolated < current_z)
+            //    {
+            //        depth_buf[get_index(x, y)] = z_interpolated;
+            //        set_pixel(Vector3f(x, y, 0), t.getColor());
+            //    }
+            //   
+            //}
+            //bool superDepthTest = false;
+            for (int idx = 0; idx < offsetArr.size(); idx++)
+            {
+                float newX = x + offsetArr[idx][0];
+                float newY = y + offsetArr[idx][1];
+
+                if (insideTriangle(newX, newY, t.v))
                 {
-                    depth_buf[get_index(x, y)] = z_interpolated;
-                    set_pixel(Vector3f(x, y, 0), t.getColor());
+                    //https://blog.csdn.net/Q_pril/article/details/123598746
+                    //-------------------
+                    auto [alpha, beta, gamma] = computeBarycentric2D(newX, newY, t.v);
+                    float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                    float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                    z_interpolated *= w_reciprocal;
+                    //深度插值与误差修复
+
+                    float current_z = superdepth_buf[get_index(x, y) * 4 + idx];
+                    if (z_interpolated < current_z)
+                    {
+                        superdepth_buf[get_index(x, y) * 4 + idx] = z_interpolated;
+                        superframe_buf[get_index(x, y) * 4 + idx] = t.getColor();
+                        //superDepthTest = true;
+                        //set_pixel(Vector3f(x, y, 0), t.getColor(), idx);
+                    }
+
                 }
             }
-
-            //[FIXME]效果有问题 而且要需要改成for循环
-            //float x_1 = x - 0.5;  float y_1 = y - 0.5;
-            //float x_2 = x - 0.5;  float y_2 = y + 0.5;
-            //float x_3 = x + 0.5;  float y_3 = y - 0.5;
-            //float x_4 = x + 0.5;  float y_4 = y + 0.5;
-            //
-            //    
-            //float average = 0.0;
-            //float current_z = depth_buf[get_index(x, y)];
-            //Vector3f samp_color(0.0, 0.0, 0.0);
-
-            //bool samp_1 = insideTriangle(x_1, y_1, t.v);
-            //auto [alpha_1, beta_1, gamma_1] = computeBarycentric2D(x_1, x_1, t.v);
-            //float w_reciprocal_1 = 1.0 / (alpha_1 / v[0].w() + beta_1 / v[1].w() + gamma_1 / v[2].w());
-            //float z_interpolated_1 = alpha_1 * v[0].z() / v[0].w() + beta_1 * v[1].z() / v[1].w() + gamma_1 * v[2].z() / v[2].w();
-            //z_interpolated_1 *= w_reciprocal_1;
-            ////samp_color += (samp_1 && z_interpolated_1 < current_z) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //samp_color += (samp_1 && z_interpolated_1 < superdepth_buf[get_index(x, y)][0]) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //if (z_interpolated_1 < superdepth_buf[get_index(x, y)][0])
-            //{
-            //    superdepth_buf[get_index(x, y)][0] = z_interpolated_1;
-            //}
-
-            //bool samp_2 = insideTriangle(x_2, y_2, t.v);
-            //auto [alpha_2, beta_2, gamma_2] = computeBarycentric2D(x_2, x_2, t.v);
-            //float w_reciprocal_2 = 1.0 / (alpha_2 / v[0].w() + beta_2 / v[1].w() + gamma_2 / v[2].w());
-            //float z_interpolated_2 = alpha_2 * v[0].z() / v[0].w() + beta_2 * v[1].z() / v[1].w() + gamma_2 * v[2].z() / v[2].w();
-            //z_interpolated_2 *= w_reciprocal_2;
-            ////samp_color += (samp_2 && z_interpolated_2 < current_z) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //samp_color += (samp_2 && z_interpolated_2 < superdepth_buf[get_index(x, y)][1]) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //if (z_interpolated_2 < superdepth_buf[get_index(x, y)][1])
-            //{
-            //    superdepth_buf[get_index(x, y)][1] = z_interpolated_2;
-            //}
-
-
-            //bool samp_3 = insideTriangle(x_3, y_3, t.v);
-            //auto [alpha_3, beta_3, gamma_3] = computeBarycentric2D(x_3, x_3, t.v);
-            //float w_reciprocal_3 = 1.0 / (alpha_3 / v[0].w() + beta_3 / v[1].w() + gamma_3 / v[2].w());
-            //float z_interpolated_3 = alpha_3 * v[0].z() / v[0].w() + beta_3 * v[1].z() / v[1].w() + gamma_3 * v[2].z() / v[2].w();
-            //z_interpolated_3 *= w_reciprocal_3;
-            ////samp_color += (samp_3 && z_interpolated_3 < superdepth_buf[get_index(x, y)][2]) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //samp_color += (samp_2 && z_interpolated_3 < superdepth_buf[get_index(x, y)][2]) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //if (z_interpolated_3 < superdepth_buf[get_index(x, y)][2])
-            //{
-            //    superdepth_buf[get_index(x, y)][2] = z_interpolated_3;
-            //}
-
-            //bool samp_4 = insideTriangle(x_4, y_4, t.v);
-            //auto [alpha_4, beta_4, gamma_4] = computeBarycentric2D(x_4, x_4, t.v);
-            //float w_reciprocal_4 = 1.0 / (alpha_4 / v[0].w() + beta_4 / v[1].w() + gamma_4 / v[2].w());
-            //float z_interpolated_4 = alpha_4 * v[0].z() / v[0].w() + beta_4 * v[1].z() / v[1].w() + gamma_4 * v[2].z() / v[2].w();
-            //z_interpolated_4 *= w_reciprocal_4;
-            ////samp_color += (samp_4 && z_interpolated_4 < current_z) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //samp_color += (samp_2 && z_interpolated_4 < superdepth_buf[get_index(x, y)][3]) ? t.getColor() : Vector3f(0.0, 0.0, 0.0);
-            //if (z_interpolated_4 < superdepth_buf[get_index(x, y)][3])
-            //{
-            //    superdepth_buf[get_index(x, y)][3] = z_interpolated_4;
-            //}
-
-
-            //float z_interpolated = z_interpolated_1 + z_interpolated_2 + z_interpolated_3 + z_interpolated_4;
-            //z_interpolated /= 4.0;
-            //samp_color /= 4.0;
-            //bool insideTri = samp_1 || samp_2 || samp_3 || samp_4;
-            //bool depthTest = z_interpolated_1 < current_z || z_interpolated_2 < current_z || z_interpolated_3 < current_z || z_interpolated_4 < current_z;
-            ///*bool insideTri = samp_1;
-            //bool depthTest = z_interpolated_1 < current_z;*/
-            //if(insideTri && depthTest)
-            //{
-            //    //depth_buf[get_index(x, y)] = z_interpolated; //不开4倍深度缓冲buffer的话效果不是特别好
-            //    set_pixel(Vector3f(x, y, 0), samp_color);
-            //}
+            if (true)
+            {
+                set_pixel(Vector3f(x, y, 0), (superframe_buf[get_index(x, y) * 4 + 0] 
+                                                + superframe_buf[get_index(x, y) * 4 + 1]
+                                                + superframe_buf[get_index(x, y) * 4 + 2]
+                                                + superframe_buf[get_index(x, y) * 4 + 3]) / 4.0);
+            }
             
         }
     }
@@ -264,12 +236,13 @@ void rst::rasterizer::clear(rst::Buffers buff)
     if ((buff & rst::Buffers::Color) == rst::Buffers::Color)
     {
         std::fill(frame_buf.begin(), frame_buf.end(), Eigen::Vector3f{0, 0, 0});
+        std::fill(superframe_buf.begin(), superframe_buf.end(), Eigen::Vector3f{ 0, 0, 0 });
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
         float infty = std::numeric_limits<float>::infinity();
         std::fill(depth_buf.begin(), depth_buf.end(), infty);
-        std::fill(superdepth_buf.begin(), superdepth_buf.end(), Eigen::Vector4f{ infty, infty, infty, infty });
+        std::fill(superdepth_buf.begin(), superdepth_buf.end(), infty);
     }
 }
 
@@ -277,18 +250,21 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
     frame_buf.resize(w * h);
     depth_buf.resize(w * h);
-    superdepth_buf.resize(w * h);
+    superdepth_buf.resize(w * h * 4);
+    superframe_buf.resize(w * h * 4);
 }
 
-int rst::rasterizer::get_index(int x, int y)
+int rst::rasterizer::get_index(int x, int y, int offset)
 {
-    return (height-1-y)*width + x;
+    //FIXMEjhh 这里需要加保护 防止越界 
+    return (height-1-y)*width + x + offset;
 }
 
-void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color)
+void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color, int offset)
 {
+    //FIXMEjhh 这里需要加保护 防止越界 
     //old index: auto ind = point.y() + point.x() * width;
-    auto ind = (height-1-point.y())*width + point.x();
+    auto ind = (height-1-point.y())*width + point.x() + offset;
     frame_buf[ind] = color;
 
 }
