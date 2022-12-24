@@ -50,7 +50,21 @@ Eigen::Matrix4f get_model_matrix(float angle)
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
     // TODO: Use the same projection matrix from the previous assignments
-	Eigen::Matrix4f projection;
+    float angle_pi = eye_fov * MY_PI / 180.0;
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+
+    // TODO: Implement this function
+    // Create the projection matrix for the given parameters.
+    // Then return it.
+    /*projection << 1.0 / (tan(angle_pi) * aspect_ratio), 0, 0, 0,
+        0, 1.0 / tan(angle_pi), 0, 0,
+        0, 0, -(zFar + zNear) / (zFar - zNear), -2.0 * zFar * zNear / (zFar - zNear),
+        0, 0, -1, 0;*/
+
+    projection << 1 / (aspect_ratio * tan(angle_pi / 2.0f)), 0, 0, 0,
+        0, 1 / tan(angle_pi / 2.0f), 0, 0,
+        0, 0, -(zFar + zNear) / (zFar - zNear), 2 * zFar * zNear / (zNear - zFar),
+        0, 0, -1, 0;
 
 	return projection;
 }
@@ -345,6 +359,7 @@ int main(int argc, const char** argv)
         //r.draw(pos_id, ind_id, col_id, rst::Primitive::Triangle);
         r.draw(TriangleList);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
+        //cv::Mat image(700, 700, CV_32FC3, r.super_frame_buffer().data());
         image.convertTo(image, CV_8UC3, 1.0f);
         cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 

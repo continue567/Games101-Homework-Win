@@ -63,3 +63,17 @@ void Triangle::setColors(const std::array<Vector3f, 3>& colors)
     setColor(1, colors[1][0], colors[1][1], colors[1][2]);
     setColor(2, colors[2][0], colors[2][1], colors[2][2]);
 }
+
+std::array<Vector2f, 3> Triangle::getAABBBox() const
+{
+    std::array<Eigen::Vector2f, 3> res;
+    res[0][0] = std::min(v[0].x(), std::min(v[1].x(), v[2].x()));
+    res[0][1] = std::max(v[0].x(), std::max(v[1].x(), v[2].x()));
+
+    res[1][0] = std::min(v[0].y(), std::min(v[1].y(), v[2].y()));
+    res[1][1] = std::max(v[0].y(), std::max(v[1].y(), v[2].y()));
+
+    res[2][0] = std::min(v[0].z(), std::min(v[1].z(), v[2].z()));
+    res[2][1] = std::max(v[0].z(), std::max(v[1].z(), v[2].z()));
+    return res;
+}

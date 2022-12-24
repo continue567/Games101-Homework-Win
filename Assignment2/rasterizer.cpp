@@ -134,10 +134,10 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
     std::array<Vector2f, 3> aabb = t.getAABBBox();
-    int min_x = aabb[0][0];
-    int max_x = aabb[0][1];
-    int min_y = aabb[0][0];
-    int max_y = aabb[0][1];
+    int min_x = std::floor(aabb[0][0]);
+    int max_x = std::ceil(aabb[0][1]);
+    int min_y = std::floor(aabb[1][0]);
+    int max_y = std::ceil(aabb[1][1]);
 
     //³¬²ÉÑù
     std::array<Vector2f, 4> offsetArr;
@@ -168,7 +168,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
             //    }
             //   
             //}
-            //bool superDepthTest = false;
+            bool superDepthTest = false;
             for (int idx = 0; idx < offsetArr.size(); idx++)
             {
                 float newX = x + offsetArr[idx][0];
@@ -189,13 +189,13 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                     {
                         superdepth_buf[get_index(x, y) * 4 + idx] = z_interpolated;
                         superframe_buf[get_index(x, y) * 4 + idx] = t.getColor();
-                        //superDepthTest = true;
+                        superDepthTest = true;
                         //set_pixel(Vector3f(x, y, 0), t.getColor(), idx);
                     }
 
                 }
             }
-            if (true)
+            if (superDepthTest)
             {
                 set_pixel(Vector3f(x, y, 0), (superframe_buf[get_index(x, y) * 4 + 0] 
                                                 + superframe_buf[get_index(x, y) * 4 + 1]
