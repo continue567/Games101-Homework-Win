@@ -299,11 +299,11 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
     {
         for (int y = min_y; y < max_y; ++y)
         {
-            if (insideTriangle(x, y, t.v))
+            if (insideTriangle(x+0.5f, y+0.5f, t.v))
             {
                 //https://blog.csdn.net/Q_pril/article/details/123598746
                 //-------------------
-                auto [alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+                auto [alpha, beta, gamma] = computeBarycentric2D(x+0.5f, y+0.5f, t.v);
                 float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 z_interpolated *= w_reciprocal;
@@ -313,7 +313,19 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
                 if (z_interpolated < current_z)
                 {
                     depth_buf[get_index(x, y)] = z_interpolated;
-                    set_pixel(Vector2i(x, y), Eigen::Vector3f(200.0, 200.0, 200.0));
+
+                    auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1.0);
+                    auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1.0);
+                    auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1.0);
+                    auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1.0);
+
+
+                    fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+                    payload.view_pos = interpolated_shadingcoords;
+                    auto pixel_color = fragment_shader(payload);
+
+
+                    set_pixel(Vector2i(x, y), pixel_color);
                 }
                
             }

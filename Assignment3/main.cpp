@@ -145,6 +145,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
 
     std::vector<light> lights = {l1, l2};
     Eigen::Vector3f amb_light_intensity{10, 10, 10};
+    //FIXMEjhh 这里感觉有点问题 eye_pos是世界坐标 但是这里的计算全是基于相机坐标 所以这个eye_pos应该要乘以view矩阵？
     Eigen::Vector3f eye_pos{0, 0, 10};
 
     float p = 150;
@@ -154,10 +155,17 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f normal = payload.normal;
 
     Eigen::Vector3f result_color = {0, 0, 0};
+    Eigen::Vector3f ambLt = ka.cwiseProduct(amb_light_intensity);//cwiseProduct点对点乘   不改变amb_light_intensity行数列数
     for (auto& light : lights)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
+        Eigen::Vector3f ltDir = light.position - point;
+        Eigen::Vector3f hVec = (ltDir.normalized() + (eye_pos - point).normalized()).normalized();//记得ltDir和(eye_pos - point)要归一化再求hVec 否则会改变hVec方向
+        Eigen::Vector3f diffLt = kd.cwiseProduct(light.intensity / ltDir.dot(ltDir)) * std::max(normal.normalized().dot(ltDir.normalized()), 0.0f);
+        Eigen::Vector3f specLt = ks.cwiseProduct(light.intensity / ltDir.dot(ltDir)) * std::pow(std::max(normal.normalized().dot(hVec.normalized()), 0.0f), p);
+        result_color += (ambLt + diffLt + specLt);
+
         
     }
 
