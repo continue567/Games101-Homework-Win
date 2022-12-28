@@ -22,8 +22,10 @@ public:
 
     int width, height;
 
-    Eigen::Vector3f getColor(float u, float v)
+    Eigen::Vector3f getColor(float u, float v)//TODOjhh 这里可以补充一个枚举 线性插值或者最近邻
     {
+        u = u - std::floor(u);
+        v = v - std::floor(v);
         auto u_img = u * width;
         auto v_img = (1 - v) * height;
         auto color = image_data.at<cv::Vec3b>(v_img, u_img);
